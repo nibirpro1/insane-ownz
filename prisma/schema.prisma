@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Warning {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  moderator String
+  reason    String
+  createdAt DateTime @default(now())
+}
+
+model UserProfile {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  xp        Int      @default(0)
+  level     Int      @default(1)
+  balance   Int      @default(0)
+  lastDaily DateTime?
+
+  @@unique([guildId, userId])
+}
+
+model Ticket {
+  id        String   @id @default(cuid())
+  guildId   String
+  channelId String
+  ownerId   String
+  number    Int      @default(0)
+  category  String   @default("support")
+  subject   String?
+  details   String?
+  priority  String   @default("normal")
+  claimedBy String?
+  status    String   @default("open")
+  closedBy  String?
+  closeReason String?
+  createdAt DateTime @default(now())
+  closedAt  DateTime?
+}
+
+model GuildConfig {
+  guildId          String  @id
+  ticketStaffRoleId String?
+  ticketLogChannelId String?
+  ticketCounter    Int     @default(0)
+  modLogChannelId  String?
+  ticketCategoryId String?
+  welcomeChannelId String?
+  levelUpChannelId String?
+  autoRoleId       String?
+  liveLeaderboardChannelId String?
+  liveLeaderboardMessageId String?
+}
+
+model ReactionRole {
+  id        String @id @default(cuid())
+  guildId   String
+  channelId String
+  messageId String
+  emoji     String
+  roleId    String
+
+  @@unique([messageId, emoji])
+}
+
+model RestrictedChannel {
+  channelId   String @id
+  guildId     String
+  muteMinutes Int    @default(10)
+}
+
+model Giveaway {
+  id             String   @id @default(cuid())
+  guildId        String
+  channelId      String
+  messageId      String   @unique
+  hostId         String
+  prize          String
+  winnerCount    Int      @default(1)
+  requiredInvites Int     @default(0)
+  endsAt         DateTime
+  ended          Boolean  @default(false)
+  winners        String?
+  createdAt      DateTime @default(now())
+
+  entries GiveawayEntry[]
+}
+
+model GiveawayEntry {
+  id         String   @id @default(cuid())
+  giveawayId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  giveaway Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+
+  @@unique([giveawayId, userId])
+}
+
+model InviteEvent {
+  guildId   String    @id
+  active    Boolean   @default(false)
+  startedAt DateTime?
+  startedBy String?
+}
+
+model InviteRecord {
+  id       String   @id @default(cuid())
+  guildId  String
+  inviterId String
+  joinedId String
+  joinedAt DateTime @default(now())
+
+  @@unique([guildId, joinedId])
+}
+
+/// Every slash command run, for the dashboard's activity log.
+model CommandLog {
+  id          String   @id @default(cuid())
+  guildId     String
+  userId      String
+  username    String
+  commandName String
+  channelId   String?
+  success     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([guildId, createdAt])
+  @@index([userId])
+  @@index([commandName])
+}
+
+/// Every AutoMod action taken (deleted message, mute, scam link block, spam block),
+/// for the dashboard's moderation feed.
+model AutomodLog {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  username  String
+  channelId String?
+  reason    String
+  action    String   @default("delete")
+  createdAt DateTime @default(now())
+
+  @@index([guildId, createdAt])
+  @@index([userId])
+}

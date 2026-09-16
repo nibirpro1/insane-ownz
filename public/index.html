@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Insane Ownz · Control Room</title>
+<meta name="description" content="Live control room for the Insane Ownz Discord bot — command activity, AutoMod feed, moderation history and server stats." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#080713;
+    --surface:#120f21;
+    --surface-2:#191531;
+    --line:#272144;
+    --violet:#7c5cff;
+    --cyan:#22d3ee;
+    --success:#2dd4a7;
+    --warning:#fbbf24;
+    --danger:#f43f5e;
+    --text:#ede9fb;
+    --muted:#8d87ac;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1100px 600px at 90% -12%, rgba(124,92,255,0.20), transparent 60%),
+      radial-gradient(800px 520px at -12% 8%, rgba(34,211,238,0.11), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.num{font-family:'Space Grotesk',sans-serif;}
+  button{font-family:inherit;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--surface-2);border-radius:8px;}
+
+  /* ---------- Login gate ---------- */
+  #gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .gate-card{
+    width:100%;max-width:360px;background:var(--surface);border:1px solid var(--line);
+    border-radius:20px;padding:30px 26px;text-align:center;
+    box-shadow:0 30px 80px rgba(0,0,0,0.45);
+  }
+  .glyph{
+    width:46px;height:46px;margin:0 auto 14px;border-radius:14px;
+    background:linear-gradient(135deg,var(--violet),var(--cyan));
+    display:flex;align-items:center;justify-content:center;font-weight:700;
+    font-family:'Space Grotesk',sans-serif;font-size:20px;color:#0a0814;
+  }
+  .gate-card h1{font-size:20px;margin:0 0 4px;}
+  .gate-card p{color:var(--muted);margin:0 0 18px;font-size:13px;}
+  .field{position:relative;}
+  .gate-card input{
+    width:100%;padding:12px 14px;border-radius:11px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--text);font-size:14px;outline:none;
+  }
+  .gate-card input:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,92,255,0.16);}
+  .gate-card button{
+    width:100%;margin-top:12px;padding:12px 14px;border-radius:11px;border:none;
+    background:linear-gradient(135deg,var(--violet),#5b3ffb);color:#fff;font-weight:600;font-size:14px;cursor:pointer;
+  }
+  .gate-card button:disabled{opacity:0.6;cursor:default;}
+  .err{color:var(--danger);font-size:12.5px;min-height:17px;margin-top:9px;}
+  .remember{display:flex;align-items:center;justify-content:center;gap:7px;color:var(--muted);font-size:12.5px;margin-top:12px;}
+  .remember input{width:auto;}
+
+  /* ---------- Shell ---------- */
+  #app{display:none;min-height:100vh;grid-template-columns:212px 1fr;}
+  @media (max-width:900px){#app{grid-template-columns:1fr;}}
+
+  aside{
+    border-right:1px solid var(--line);padding:22px 16px;position:sticky;top:0;height:100vh;
+    display:flex;flex-direction:column;gap:6px;background:rgba(10,8,20,0.6);backdrop-filter:blur(8px);
+  }
+  @media (max-width:900px){
+    aside{position:sticky;top:0;z-index:20;height:auto;padding:10px 12px;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;align-items:center;border-right:none;border-bottom:1px solid var(--line);}
+    aside::-webkit-scrollbar{height:0;}
+    aside .navbtn{width:auto;flex:0 0 auto;scroll-snap-align:start;}
+    aside .side-brand{margin:0 10px 0 0;}
+    aside .spacer,aside .side-foot{display:none;}
+  }
+  .side-brand{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+  .side-brand .glyph{width:32px;height:32px;border-radius:10px;font-size:15px;margin:0;}
+  .side-brand b{font-size:15px;font-weight:600;}
+  .side-brand span{display:block;color:var(--muted);font-size:11px;}
+  .navbtn{
+    display:flex;align-items:center;gap:9px;width:100%;padding:9px 11px;border-radius:10px;
+    background:transparent;border:1px solid transparent;color:var(--muted);
+    font-size:13px;cursor:pointer;text-align:left;white-space:nowrap;
+  }
+  .navbtn:hover{color:var(--text);background:var(--surface);}
+  .navbtn.active{background:var(--surface);border-color:var(--line);color:var(--text);}
+  .navbtn .badge{margin-left:auto;font-size:10.5px;color:var(--muted);}
+  .spacer{flex:1;}
+  .side-foot{color:var(--muted);font-size:11.5px;line-height:1.5;}
+  .linkbtn{background:none;border:none;color:var(--muted);font-size:11.5px;cursor:pointer;padding:0;text-decoration:underline;}
+  .linkbtn:hover{color:var(--danger);}
+
+  main{padding:26px 26px 60px;max-width:1180px;width:100%;}
+  @media (max-width:600px){main{padding:18px 14px 44px;}}
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:22px;}
+  header.top h2{margin:0;font-size:20px;}
+  header.top .sub{color:var(--muted);font-size:12.5px;margin-top:2px;}
+  .server-chip{
+    display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);
+    border-radius:999px;padding:6px 14px 6px 6px;font-size:12.5px;
+  }
+  .server-chip img{width:26px;height:26px;border-radius:50%;object-fit:cover;background:var(--surface-2);}
+  .server-chip .n{font-weight:600;}
+  .server-chip .m{color:var(--muted);}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none;}
+  .dot.on{background:var(--success);box-shadow:0 0 10px var(--success);}
+  .dot.off{background:var(--danger);box-shadow:0 0 10px var(--danger);}
+
+  .toolbar{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;}
+  .switch{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;}
+  .ghost{
+    background:var(--surface);border:1px solid var(--line);color:var(--text);
+    border-radius:9px;padding:7px 12px;font-size:12.5px;cursor:pointer;
+  }
+  .ghost:hover{border-color:var(--violet);}
+
+  .ledger{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--surface);margin-bottom:20px;}
+  @media (max-width:700px){.ledger{grid-template-columns:repeat(2,1fr);}}
+  .cell{padding:16px 18px;border-right:1px solid var(--line);}
+  .cell:last-child{border-right:none;}
+  @media (max-width:700px){.cell:nth-child(2n){border-right:none;}.cell:nth-child(-n+2){border-bottom:1px solid var(--line);}}
+  .cell .num{font-size:26px;font-weight:700;line-height:1.1;}
+  .cell .label{color:var(--muted);font-size:12.5px;margin-top:3px;}
+  .cell.violet .num{color:var(--violet);}
+  .cell.cyan .num{color:var(--cyan);}
+  .cell.warn .num{color:var(--warning);}
+  .cell.danger .num{color:var(--danger);}
+
+  .grid{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;margin-bottom:18px;}
+  @media (max-width:900px){.grid{grid-template-columns:1fr;}}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;}
+  .panel h3{font-size:14px;margin:0 0 3px;font-weight:600;}
+  .panel .hint{color:var(--muted);font-size:12px;margin-bottom:14px;}
+  .panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+
+  .filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+  .filters input,.filters select{
+    flex:1;min-width:130px;padding:8px 10px;border-radius:9px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--text);font-size:12.5px;outline:none;
+  }
+  .filters input:focus,.filters select:focus{border-color:var(--violet);}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th{position:sticky;top:0;background:var(--surface);text-align:left;color:var(--muted);font-weight:500;padding:7px 8px;border-bottom:1px solid var(--line);font-size:11.5px;z-index:1;}
+  td{padding:8px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:rgba(124,92,255,0.05);}
+  .cmd{color:var(--cyan);font-family:ui-monospace,SFMono-Regular,monospace;}
+  .who{color:var(--text);}
+  .when{color:var(--muted);white-space:nowrap;}
+  .scroll{max-height:380px;overflow-y:auto;}
+  .empty{color:var(--muted);font-size:12.5px;padding:14px 0;text-align:center;}
+
+  .pill{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+  .pill.ok{background:rgba(45,212,167,0.14);color:var(--success);}
+  .pill.fail{background:rgba(244,63,94,0.15);color:var(--danger);}
+  .pill.delete{background:rgba(244,63,94,0.15);color:var(--danger);}
+  .pill.mute{background:rgba(251,191,36,0.15);color:var(--warning);}
+  .pill.warn{background:rgba(251,191,36,0.15);color:var(--warning);}
+  .pill.neutral{background:var(--surface-2);color:var(--muted);}
+
+  .feed-item{padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+  .feed-item:last-child{border-bottom:none;}
+  .feed-top{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;}
+  .feed-top .actor{color:var(--text);font-weight:500;display:flex;align-items:center;gap:7px;}
+  .feed-top .time{color:var(--muted);white-space:nowrap;}
+  .feed-reason{color:var(--muted);font-size:12px;margin-top:4px;line-height:1.45;}
+
+  .bars .row{display:grid;grid-template-columns:110px 1fr 34px;align-items:center;gap:10px;margin-bottom:10px;font-size:12.5px;}
+  .bars .row:last-child{margin-bottom:0;}
+  .bars .track{height:8px;background:var(--surface-2);border-radius:6px;overflow:hidden;}
+  .bars .fill{height:100%;background:linear-gradient(90deg,var(--violet),var(--cyan));border-radius:6px;transition:width .4s ease;}
+  .bars .row .n{text-align:right;color:var(--muted);}
+  .bars .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  .spark{display:flex;align-items:flex-end;gap:4px;height:96px;margin-top:6px;}
+  .spark .b{flex:1;background:linear-gradient(180deg,var(--violet),rgba(34,211,238,0.35));border-radius:4px 4px 2px 2px;min-height:3px;transition:height .4s ease;}
+  .spark-axis{display:flex;justify-content:space-between;color:var(--muted);font-size:10.5px;margin-top:6px;}
+
+  .view{display:none;}
+  .view.active{display:block;}
+  .skeleton{background:linear-gradient(90deg,var(--surface-2),#211c3d,var(--surface-2));background-size:200% 100%;animation:sk 1.2s infinite;border-radius:6px;color:transparent;}
+  @keyframes sk{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+  .kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;}
+  .kv .box{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:13px 15px;}
+  .kv .box .k{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;}
+  .kv .box .v{font-family:'Space Grotesk',sans-serif;font-size:19px;margin-top:5px;word-break:break-word;}
+  .kv .box .s{color:var(--muted);font-size:12px;margin-top:3px;}
+  .step{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+  .step:last-child{border-bottom:none;}
+  .step .n2{flex:none;width:24px;height:24px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--violet);}
+  .step .t{font-size:13px;}
+  .step .d{color:var(--muted);font-size:12px;margin-top:3px;line-height:1.5;}
+  .code{display:flex;align-items:center;gap:10px;background:#0b0918;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;font-family:ui-monospace,SFMono-Regular,monospace;font-size:12px;color:var(--cyan);overflow-x:auto;}
+  .code code{white-space:pre;flex:1;}
+  .code button{flex:none;background:var(--surface-2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:4px 9px;font-size:11.5px;cursor:pointer;}
+  .code button:hover{border-color:var(--violet);}
+  .form-row{display:grid;grid-template-columns:170px 1fr;gap:12px;align-items:center;margin-bottom:12px;}
+  @media (max-width:600px){.form-row{grid-template-columns:1fr;gap:6px;}}
+  .form-row label{color:var(--muted);font-size:12.5px;}
+  .form-row select,.form-row input{width:100%;padding:9px 11px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);font-size:12.5px;outline:none;}
+  .form-row select:focus,.form-row input:focus{border-color:var(--violet);}
+  .primary{background:linear-gradient(135deg,var(--violet),#5b3ffb);border:none;color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+  .primary:disabled{opacity:.6;cursor:default;}
+  .toast{
+    position:fixed;bottom:18px;right:18px;background:var(--surface);border:1px solid var(--line);
+    border-left:3px solid var(--danger);border-radius:10px;padding:10px 14px;font-size:12.5px;
+    opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:none;}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-card">
+    <div class="glyph">D</div>
+    <h1>Insane Ownz · Control Room</h1>
+    <p>Enter the dashboard password to continue</p>
+    <div class="field">
+      <input id="pw" type="password" placeholder="Password" autocomplete="current-password" />
+    </div>
+    <button id="loginBtn" type="button">Enter</button>
+    <label class="remember"><input id="remember" type="checkbox" checked /> Keep me signed in on this device</label>
+    <div class="err" id="err"></div>
+  </div>
+</div>
+
+<div id="app">
+  <aside>
+    <div class="side-brand">
+      <div class="glyph">D</div>
+      <div>
+        <b>Insane Ownz</b>
+        <span>Control Room</span>
+      </div>
+    </div>
+    <button class="navbtn active" data-view="overview">Overview</button>
+    <button class="navbtn" data-view="commands">Activity <span class="badge" id="badgeCmd"></span></button>
+    <button class="navbtn" data-view="automod">AutoMod <span class="badge" id="badgeAuto"></span></button>
+    <button class="navbtn" data-view="warnings">Warnings <span class="badge" id="badgeWarn"></span></button>
+    <button class="navbtn" data-view="history">History</button>
+    <button class="navbtn" data-view="setup">Setup</button>
+    <button class="navbtn" data-view="status">Live status</button>
+    <button class="navbtn" data-view="deploy">Deploy</button>
+    <div class="spacer"></div>
+    <div class="side-foot">
+      <div id="lastSync">—</div>
+      <button class="linkbtn" id="logoutBtn" type="button">Sign out</button>
+    </div>
+  </aside>
+
+  <main>
+    <header class="top">
+      <div>
+        <h2 id="viewTitle">Overview</h2>
+        <div class="sub" id="viewSub">Everything Insane Ownz has been up to</div>
+      </div>
+      <div class="toolbar">
+        <div class="server-chip">
+          <img id="guildIcon" alt="" />
+          <span class="dot" id="statusDot"></span>
+          <span><span class="n" id="guildName">—</span> <span class="m" id="guildMembers"></span></span>
+        </div>
+        <label class="switch"><input type="checkbox" id="autoRefresh" checked /> Live</label>
+        <button class="ghost" id="refreshBtn" type="button">Refresh</button>
+      </div>
+    </header>
+
+    <!-- OVERVIEW -->
+    <section class="view active" id="view-overview">
+      <div class="ledger">
+        <div class="cell violet"><div class="num" id="statCommands">–</div><div class="label">commands run</div></div>
+        <div class="cell cyan"><div class="num" id="statTickets">–</div><div class="label">open tickets</div></div>
+        <div class="cell warn"><div class="num" id="statAutomod">–</div><div class="label">automod actions</div></div>
+        <div class="cell danger"><div class="num" id="statWarnings">–</div><div class="label">staff warnings</div></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-head">
+          <div>
+            <h3>Activity, last 24 hours</h3>
+            <div class="hint">Commands per hour, built from the latest activity log.</div>
+          </div>
+          <span class="pill neutral" id="sparkTotal">–</span>
+        </div>
+        <div class="spark" id="spark"></div>
+        <div class="spark-axis"><span>24h ago</span><span>12h</span><span>now</span></div>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <h3>Top commands</h3>
+          <div class="hint">Most-used commands overall</div>
+          <div class="bars" id="topCommands"></div>
+        </div>
+        <div class="panel">
+          <h3>Most active members</h3>
+          <div class="hint">Who leans on Insane Ownz the most</div>
+          <div class="bars" id="topUsers"></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <h3>Latest activity</h3>
+          <div class="hint">Newest commands as they come in</div>
+          <div class="scroll">
+            <table>
+              <thead><tr><th>User</th><th>Command</th><th>Status</th><th>When</th></tr></thead>
+              <tbody id="miniCmdRows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>AutoMod feed</h3>
+          <div class="hint">Scam links, spam and blocked words Insane Ownz caught</div>
+          <div class="scroll" id="miniAutomod"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMMANDS -->
+    <section class="view" id="view-commands">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3>Command activity log</h3>
+            <div class="hint">Who ran what, where, and whether it worked.</div>
+          </div>
+          <span class="pill neutral" id="cmdCount">–</span>
+        </div>
+        <div class="filters">
+          <input id="fUser" placeholder="filter by username…" />
+          <input id="fCmd" placeholder="filter by command…" />
+          <select id="fStatus">
+            <option value="">All results</option>
+            <option value="ok">Succeeded</option>
+            <option value="fail">Failed</option>
+          </select>
+          <select id="fLimit">
+            <option value="50">50 rows</option>
+            <option value="100">100 rows</option>
+            <option value="200">200 rows</option>
+          </select>
+        </div>
+        <div class="scroll" style="max-height:none;">
+          <table>
+            <thead><tr><th>User</th><th>Command</th><th>Channel</th><th>Status</th><th>When</th></tr></thead>
+            <tbody id="cmdRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- AUTOMOD -->
+    <section class="view" id="view-automod">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3>AutoMod feed</h3>
+            <div class="hint">Every automatic action — deletions, mutes, scam-link blocks.</div>
+          </div>
+          <span class="pill neutral" id="autoCount">–</span>
+        </div>
+        <div class="filters">
+          <input id="fAuto" placeholder="filter by user or reason…" />
+        </div>
+        <div id="automodFeed"></div>
+      </div>
+    </section>
+
+    <!-- WARNINGS -->
+    <section class="view" id="view-warnings">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3>Staff warnings</h3>
+            <div class="hint">Manual moderation issued by your team.</div>
+          </div>
+          <span class="pill neutral" id="warnCount">–</span>
+        </div>
+        <div class="filters">
+          <input id="fWarn" placeholder="filter by user or reason…" />
+        </div>
+        <div class="scroll" style="max-height:none;">
+          <table>
+            <thead><tr><th>User</th><th>Reason</th><th>Moderator</th><th>When</th></tr></thead>
+            <tbody id="warnRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMMAND HISTORY -->
+    <section class="view" id="view-history">
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-head">
+          <div>
+            <h3>Command history</h3>
+            <div class="hint">/help, /ticket, /leaderboard and /setup — who ran it, in which channel, and whether it worked.</div>
+          </div>
+          <span class="pill neutral" id="histCount">–</span>
+        </div>
+        <div class="filters">
+          <select id="fHistCmd">
+            <option value="">All four commands</option>
+            <option value="help">/help</option>
+            <option value="ticket">/ticket</option>
+            <option value="leaderboard">/leaderboard</option>
+            <option value="setup">/setup</option>
+          </select>
+        </div>
+      </div>
+      <div id="historyGroups"></div>
+    </section>
+
+    <!-- SETUP -->
+    <section class="view" id="view-setup">
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-head">
+          <div>
+            <h3>Setup panel</h3>
+            <div class="hint">Pick channels here and the bot applies them straight away — same settings as /setup.</div>
+          </div>
+          <span class="pill neutral" id="setupState">–</span>
+        </div>
+        <div class="form-row">
+          <label for="cfgBoard">Live leaderboard channel</label>
+          <select id="cfgBoard"><option value="">Off</option></select>
+        </div>
+        <div class="form-row">
+          <label for="cfgModLog">Moderation log</label>
+          <select id="cfgModLog"><option value="">Not set</option></select>
+        </div>
+        <div class="form-row">
+          <label for="cfgWelcome">Welcome channel</label>
+          <select id="cfgWelcome"><option value="">Not set</option></select>
+        </div>
+        <div class="form-row">
+          <label for="cfgLevelUp">Level-up channel</label>
+          <select id="cfgLevelUp"><option value="">Not set</option></select>
+        </div>
+        <div class="form-row">
+          <label for="cfgTicketLog">Ticket log</label>
+          <select id="cfgTicketLog"><option value="">Not set</option></select>
+        </div>
+        <button class="primary" id="saveCfg" type="button">Save settings</button>
+      </div>
+      <div class="panel">
+        <h3>Live leaderboard sync</h3>
+        <div class="hint">What happens after you save a channel.</div>
+        <div class="step"><div class="n2">1</div><div><div class="t">Board posted and pinned once</div><div class="d">Choosing a new channel clears the old pinned message and the bot posts a fresh board there right away.</div></div></div>
+        <div class="step"><div class="n2">2</div><div><div class="t">The same message keeps updating</div><div class="d" id="syncEvery">It edits that one pinned message on every tick — it never posts a second board.</div></div></div>
+        <div class="step"><div class="n2">3</div><div><div class="t">No edit when nothing changed</div><div class="d">If the top 10 is identical to the last tick, the edit is skipped entirely — that is what keeps it spam-free. <span id="skipCount"></span></div></div></div>
+      </div>
+    </section>
+
+    <!-- LIVE STATUS -->
+    <section class="view" id="view-status">
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-head">
+          <div>
+            <h3>Live status</h3>
+            <div class="hint">Counting up in real time while the bot is running.</div>
+          </div>
+          <span class="pill neutral" id="statusPill">–</span>
+        </div>
+        <div class="kv">
+          <div class="box"><div class="k">Uptime</div><div class="v" id="stUptime">–</div><div class="s" id="stStarted">–</div></div>
+          <div class="box"><div class="k">Ping</div><div class="v" id="stPing">–</div><div class="s">Discord gateway</div></div>
+          <div class="box"><div class="k">Commands loaded</div><div class="v" id="stCommands">–</div><div class="s">slash commands ready</div></div>
+          <div class="box"><div class="k">Last restart</div><div class="v" id="stRestart">–</div><div class="s" id="stRestartAbs">–</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Latest of everything</h3>
+        <div class="hint">Each one shows how long ago it happened.</div>
+        <div class="kv">
+          <div class="box"><div class="k">Last command</div><div class="v" id="stLastCmd">–</div><div class="s" id="stLastCmdAgo">–</div></div>
+          <div class="box"><div class="k">Last ticket</div><div class="v" id="stLastTicket">–</div><div class="s" id="stLastTicketAgo">–</div></div>
+          <div class="box"><div class="k">Last leaderboard tick</div><div class="v" id="stLastTick">–</div><div class="s" id="stLastTickAgo">–</div></div>
+          <div class="box"><div class="k">Last AutoMod action</div><div class="v" id="stLastAuto">–</div><div class="s" id="stLastAutoAgo">–</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DEPLOY -->
+    <section class="view" id="view-deploy">
+      <div class="panel" style="margin-bottom:18px;">
+        <h3>Your bot token</h3>
+        <div class="hint">Paste it here to build your ready-to-paste .env block. It stays in this browser — nothing is sent anywhere.</div>
+        <div class="form-row">
+          <label for="depToken">DISCORD_TOKEN</label>
+          <input id="depToken" type="password" placeholder="paste the token from the Discord developer portal" />
+        </div>
+        <div class="form-row">
+          <label for="depGuild">GUILD_ID</label>
+          <input id="depGuild" placeholder="your server id" />
+        </div>
+        <div class="form-row">
+          <label for="depPw">DASHBOARD_PASSWORD</label>
+          <input id="depPw" placeholder="password for this dashboard" />
+        </div>
+        <div class="code"><code id="envOut">DISCORD_TOKEN=
+GUILD_ID=
+DASHBOARD_PASSWORD=
+DATABASE_URL=postgresql://user:pass@host:5432/insane_ownz</code><button type="button" data-copy="envOut">Copy</button></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:18px;">
+        <h3>Run it on your host</h3>
+        <div class="hint">Two commands to install, two to go live.</div>
+        <div class="code"><code id="cmd1">bun install
+bunx prisma migrate deploy</code><button type="button" data-copy="cmd1">Copy</button></div>
+        <div class="code"><code id="cmd2">bun run deploy-commands
+bun start</code><button type="button" data-copy="cmd2">Copy</button></div>
+      </div>
+
+      <div class="panel">
+        <h3>Then, inside Discord</h3>
+        <div class="hint">Four steps and everything is live.</div>
+        <div class="step"><div class="n2">1</div><div><div class="t">Invite the bot</div><div class="d">Developer portal → OAuth2 → URL generator → scopes <b>bot</b> + <b>applications.commands</b>, then open the link and pick your server.</div></div></div>
+        <div class="step"><div class="n2">2</div><div><div class="t">Run /setuproles</div><div class="d">Creates the staff and member roles the bot needs, in the right order.</div></div></div>
+        <div class="step"><div class="n2">3</div><div><div class="t">Run /setup</div><div class="d">Choose your mod-log, welcome, level-up and ticket channels — or set them from the Setup page here.</div></div></div>
+        <div class="step"><div class="n2">4</div><div><div class="t">Run /leaderboard live</div><div class="d">Posts the pinned live board that keeps updating itself. Done — the pages here start filling with real data.</div></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const STORE_KEY = 'insane-ownz.dashboard.token';
+  let TOKEN = null;
+  let refreshTimer = null;
+  let cache = { commands: [], automod: [], warnings: [], history: [] };
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
+  ));
+
+  function toast(msg){
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), 3200);
+  }
+
+  function timeAgo(iso){
+    const diff = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return m + 'm ago';
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + 'h ago';
+    const d = Math.floor(h / 24);
+    return d < 30 ? d + 'd ago' : new Date(iso).toLocaleDateString();
+  }
+
+  async function api(path){
+    const res = await fetch(path, { headers: { Authorization: 'Bearer ' + TOKEN } });
+    if (res.status === 401) { signOut(); throw new Error('Session expired'); }
+    if (!res.ok) throw new Error('Request failed: ' + path);
+    return res.json();
+  }
+
+  /* ---------------- auth ---------------- */
+  async function login(){
+    const pw = $('pw').value.trim();
+    const btn = $('loginBtn');
+    $('err').textContent = '';
+    if (!pw) { $('err').textContent = 'Password required.'; return; }
+    btn.disabled = true; btn.textContent = 'Checking…';
+    try{
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw })
+      });
+      if (!res.ok) { $('err').textContent = res.status === 401 ? 'Wrong password.' : 'Server error — check DASHBOARD_PASSWORD.'; return; }
+      TOKEN = pw;
+      if ($('remember').checked) localStorage.setItem(STORE_KEY, pw);
+      enterApp();
+    }catch(e){
+      $('err').textContent = 'Could not reach the server.';
+    }finally{
+      btn.disabled = false; btn.textContent = 'Enter';
+    }
+  }
+
+  function enterApp(){
+    $('gate').style.display = 'none';
+    $('app').style.display = 'grid';
+    refreshAll();
+    startTimer();
+  }
+
+  function signOut(){
+    TOKEN = null;
+    localStorage.removeItem(STORE_KEY);
+    clearInterval(refreshTimer);
+    $('app').style.display = 'none';
+    $('gate').style.display = 'flex';
+    $('pw').value = '';
+  }
+
+  /* ---------------- loaders ---------------- */
+  async function loadOverview(){
+    const d = await api('/api/overview');
+    const dot = $('statusDot');
+    dot.classList.toggle('on', !!d.botOnline);
+    dot.classList.toggle('off', !d.botOnline);
+    $('guildName').textContent = d.guildName ?? 'Server not found';
+    $('guildMembers').textContent = d.memberCount != null ? '· ' + d.memberCount.toLocaleString() + ' members' : '· check GUILD_ID';
+    const icon = $('guildIcon');
+    if (d.iconUrl) { icon.src = d.iconUrl; icon.style.display = 'block'; } else { icon.style.display = 'none'; }
+  }
+
+  async function loadStats(){
+    const s = await api('/api/stats');
+    $('statCommands').textContent = (s.totalCommands ?? 0).toLocaleString();
+    $('statTickets').textContent = (s.openTickets ?? 0).toLocaleString();
+    $('statAutomod').textContent = (s.totalAutomod ?? 0).toLocaleString();
+    $('statWarnings').textContent = (s.totalWarnings ?? 0).toLocaleString();
+    renderBars('topCommands', (s.topCommands || []).map(c => ({ label: '/' + c.name, count: c.count, mono: true })), 'No commands logged yet.');
+    renderBars('topUsers', (s.topUsers || []).map(u => ({ label: u.name, count: u.count })), 'No members tracked yet.');
+  }
+
+  function renderBars(id, items, emptyMsg){
+    const el = $(id);
+    if (!items.length) { el.innerHTML = '<div class="empty">' + emptyMsg + '</div>'; return; }
+    const max = Math.max(1, ...items.map(i => i.count));
+    el.innerHTML = items.map(i => `
+      <div class="row">
+        <div class="name ${i.mono ? 'cmd' : ''}" title="${esc(i.label)}">${esc(i.label)}</div>
+        <div class="track"><div class="fill" style="width:${Math.max(4, i.count / max * 100).toFixed(0)}%"></div></div>
+        <div class="n">${i.count}</div>
+      </div>`).join('');
+  }
+
+  async function loadCommands(){
+    const user = $('fUser').value.trim();
+    const command = $('fCmd').value.trim();
+    const limit = $('fLimit').value;
+    const params = new URLSearchParams({ limit, ...(user ? { user } : {}), ...(command ? { command } : {}) });
+    cache.commands = await api('/api/command-logs?' + params);
+    renderCommands();
+    renderSpark();
+    $('badgeCmd').textContent = cache.commands.length || '';
+  }
+
+  function renderCommands(){
+    const status = $('fStatus').value;
+    const rows = cache.commands.filter(r => !status || (status === 'ok' ? r.success !== false : r.success === false));
+    $('cmdCount').textContent = rows.length + ' entries';
+    $('cmdRows').innerHTML = rows.length ? rows.map(r => `
+      <tr>
+        <td class="who">${esc(r.username)}</td>
+        <td class="cmd">/${esc(r.commandName)}</td>
+        <td class="when">${r.channelId ? '#' + esc(r.channelId) : '—'}</td>
+        <td><span class="pill ${r.success === false ? 'fail' : 'ok'}">${r.success === false ? 'failed' : 'ok'}</span></td>
+        <td class="when" title="${esc(new Date(r.createdAt).toLocaleString())}">${timeAgo(r.createdAt)}</td>
+      </tr>`).join('') : '<tr><td colspan="5" class="empty">No activity matches these filters.</td></tr>';
+
+    $('miniCmdRows').innerHTML = cache.commands.length ? cache.commands.slice(0, 12).map(r => `
+      <tr>
+        <td class="who">${esc(r.username)}</td>
+        <td class="cmd">/${esc(r.commandName)}</td>
+        <td><span class="pill ${r.success === false ? 'fail' : 'ok'}">${r.success === false ? 'failed' : 'ok'}</span></td>
+        <td class="when">${timeAgo(r.createdAt)}</td>
+      </tr>`).join('') : '<tr><td colspan="4" class="empty">No activity yet — run a command in Discord.</td></tr>';
+  }
+
+  function renderSpark(){
+    const buckets = new Array(24).fill(0);
+    const now = Date.now();
+    cache.commands.forEach(r => {
+      const hoursAgo = Math.floor((now - new Date(r.createdAt).getTime()) / 3600000);
+      if (hoursAgo >= 0 && hoursAgo < 24) buckets[23 - hoursAgo]++;
+    });
+    const total = buckets.reduce((a, b) => a + b, 0);
+    const max = Math.max(1, ...buckets);
+    $('sparkTotal').textContent = total + ' in 24h';
+    $('spark').innerHTML = buckets.map((v, i) => {
+      const label = (23 - i) === 0 ? 'this hour' : (23 - i) + 'h ago';
+      return `<div class="b" style="height:${Math.max(3, v / max * 100)}%" title="${v} command${v === 1 ? '' : 's'} · ${label}"></div>`;
+    }).join('');
+  }
+
+  async function loadAutomod(){
+    cache.automod = await api('/api/automod-logs?limit=100');
+    renderAutomod();
+    $('badgeAuto').textContent = cache.automod.length || '';
+  }
+
+  function renderAutomod(){
+    const q = $('fAuto').value.trim().toLowerCase();
+    const rows = cache.automod.filter(r => !q ||
+      String(r.username ?? '').toLowerCase().includes(q) ||
+      String(r.reason ?? '').toLowerCase().includes(q));
+    $('autoCount').textContent = rows.length + ' actions';
+    const html = rows.length ? rows.map(r => `
+      <div class="feed-item">
+        <div class="feed-top">
+          <span class="actor"><span class="pill ${['delete','mute','warn'].includes(r.action) ? r.action : 'neutral'}">${esc(r.action)}</span>${esc(r.username)}</span>
+          <span class="time" title="${esc(new Date(r.createdAt).toLocaleString())}">${timeAgo(r.createdAt)}</span>
+        </div>
+        <div class="feed-reason">${esc(r.reason)}</div>
+      </div>`).join('') : '<div class="empty">Nothing caught — AutoMod is quiet.</div>';
+    $('automodFeed').innerHTML = html;
+    $('miniAutomod').innerHTML = rows.length
+      ? rows.slice(0, 8).map(r => `
+        <div class="feed-item">
+          <div class="feed-top">
+            <span class="actor"><span class="pill ${['delete','mute','warn'].includes(r.action) ? r.action : 'neutral'}">${esc(r.action)}</span>${esc(r.username)}</span>
+            <span class="time">${timeAgo(r.createdAt)}</span>
+          </div>
+          <div class="feed-reason">${esc(r.reason)}</div>
+        </div>`).join('')
+      : '<div class="empty">Nothing caught — AutoMod is quiet.</div>';
+  }
+
+  async function loadWarnings(){
+    cache.warnings = await api('/api/warnings?limit=100');
+    renderWarnings();
+    $('badgeWarn').textContent = cache.warnings.length || '';
+  }
+
+  function renderWarnings(){
+    const q = $('fWarn').value.trim().toLowerCase();
+    const rows = cache.warnings.filter(r => !q ||
+      JSON.stringify(r).toLowerCase().includes(q));
+    $('warnCount').textContent = rows.length + ' warnings';
+    $('warnRows').innerHTML = rows.length ? rows.map(r => `
+      <tr>
+        <td class="who">${esc(r.username ?? r.userId)}</td>
+        <td>${esc(r.reason ?? '—')}</td>
+        <td class="when">${esc(r.moderatorTag ?? r.moderatorId ?? '—')}</td>
+        <td class="when" title="${esc(new Date(r.createdAt).toLocaleString())}">${timeAgo(r.createdAt)}</td>
+      </tr>`).join('') : '<tr><td colspan="4" class="empty">No warnings recorded.</td></tr>';
+  }
+
+
+  /* ---------------- live status ---------------- */
+  let statusData = null;
+
+  function fmtUptime(sec){
+    const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600);
+    const m = Math.floor(sec % 3600 / 60), ss = Math.floor(sec % 60);
+    const pad = (n) => String(n).padStart(2, '0');
+    return (d ? d + 'd ' : '') + pad(h) + ':' + pad(m) + ':' + pad(ss);
+  }
+
+  async function loadStatus(){
+    statusData = await api('/api/status');
+    statusData._localBase = Date.now();
+    const s = statusData;
+    $('statusPill').textContent = s.botOnline ? 'online' : 'offline';
+    $('statusPill').className = 'pill ' + (s.botOnline ? 'ok' : 'fail');
+    $('stPing').textContent = s.pingMs != null ? s.pingMs + ' ms' : '—';
+    $('stCommands').textContent = s.commandsLoaded ?? '—';
+    $('stStarted').textContent = 'since ' + new Date(s.startedAt).toLocaleString();
+    $('stRestartAbs').textContent = new Date(s.startedAt).toLocaleString();
+    $('stLastCmd').textContent = s.lastCommand ? '/' + s.lastCommand.name : 'nothing yet';
+    $('stLastTicket').textContent = s.lastTicket ? '#' + s.lastTicket.number + ' · ' + s.lastTicket.status : 'nothing yet';
+    $('stLastTick').textContent = s.lastLeaderboardTick ? 'every ' + Math.round(s.leaderboardIntervalMs / 1000) + 's' : 'not running';
+    $('stLastAuto').textContent = s.lastAutomod ? s.lastAutomod.action : 'nothing yet';
+    $('skipCount').textContent = s.leaderboardSkippedEdits
+      ? '(' + s.leaderboardSkippedEdits + ' identical ticks skipped so far)' : '';
+    $('syncEvery').textContent = 'It edits that one pinned message every '
+      + Math.round(s.leaderboardIntervalMs / 1000) + ' seconds — it never posts a second board.';
+    tickStatus();
+  }
+
+  /** Runs every second: uptime counts up, every "… ago" refreshes itself. */
+  function tickStatus(){
+    if (!statusData) return;
+    const s = statusData;
+    const drift = Math.floor((Date.now() - s._localBase) / 1000);
+    $('stUptime').textContent = fmtUptime(s.uptimeSeconds + drift);
+    $('stRestart').textContent = timeAgo(s.startedAt);
+    $('stLastCmdAgo').textContent = s.lastCommand
+      ? timeAgo(s.lastCommand.at) + ' · ' + s.lastCommand.username : '—';
+    $('stLastTicketAgo').textContent = s.lastTicket ? timeAgo(s.lastTicket.at) : '—';
+    $('stLastTickAgo').textContent = s.lastLeaderboardTick
+      ? 'last tick ' + timeAgo(s.lastLeaderboardTick)
+        + (s.lastLeaderboardEdit ? ' · last edit ' + timeAgo(s.lastLeaderboardEdit) : ' · no edit needed yet')
+      : '—';
+    $('stLastAutoAgo').textContent = s.lastAutomod
+      ? timeAgo(s.lastAutomod.at) + ' · ' + s.lastAutomod.username : '—';
+    document.querySelectorAll('[data-ago]').forEach(el => {
+      el.textContent = timeAgo(el.dataset.ago);
+    });
+  }
+
+  /* ---------------- command history ---------------- */
+  async function loadHistory(){
+    const data = await api('/api/command-history?limit=100');
+    cache.history = data.groups || [];
+    renderHistory();
+  }
+
+  function renderHistory(){
+    const only = $('fHistCmd').value;
+    const groups = cache.history.filter(g => !only || g.command === only);
+    $('histCount').textContent = groups.reduce((n, g) => n + g.total, 0) + ' runs';
+    $('historyGroups').innerHTML = groups.map(g => `
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-head">
+          <div>
+            <h3 class="cmd">/${esc(g.command)}</h3>
+            <div class="hint">${g.total} run${g.total === 1 ? '' : 's'}${g.failed ? ' · ' + g.failed + ' failed' : ''}${g.lastUsedAt ? ' · last ' + timeAgo(g.lastUsedAt) : ''}</div>
+          </div>
+          <span class="pill ${g.failed ? 'warn' : 'ok'}">${g.total - g.failed} ok</span>
+        </div>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Who ran it</th><th>Channel</th><th>Result</th><th>When</th></tr></thead>
+            <tbody>${g.entries.length ? g.entries.map(e => `
+              <tr>
+                <td class="who">${esc(e.username)}</td>
+                <td class="when">${e.channelId ? '#' + esc(e.channelId) : '—'}</td>
+                <td><span class="pill ${e.success === false ? 'fail' : 'ok'}">${e.success === false ? 'failed' : 'ok'}</span></td>
+                <td class="when" data-ago="${esc(e.createdAt)}" title="${esc(new Date(e.createdAt).toLocaleString())}">${timeAgo(e.createdAt)}</td>
+              </tr>`).join('') : '<tr><td colspan="4" class="empty">Not used yet.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>`).join('') || '<div class="panel"><div class="empty">Nothing to show.</div></div>';
+  }
+
+  /* ---------------- setup panel ---------------- */
+  const CFG_FIELDS = {
+    cfgBoard: 'liveLeaderboardChannelId',
+    cfgModLog: 'modLogChannelId',
+    cfgWelcome: 'welcomeChannelId',
+    cfgLevelUp: 'levelUpChannelId',
+    cfgTicketLog: 'ticketLogChannelId'
+  };
+
+  async function loadSetup(){
+    const [{ channels }, { config }] = await Promise.all([
+      api('/api/channels'),
+      api('/api/config')
+    ]);
+    Object.keys(CFG_FIELDS).forEach(id => {
+      const sel = $(id);
+      const current = config ? config[CFG_FIELDS[id]] : null;
+      const first = id === 'cfgBoard' ? 'Off' : 'Not set';
+      sel.innerHTML = '<option value="">' + first + '</option>' +
+        channels.map(c => `<option value="${esc(c.id)}">#${esc(c.name)}</option>`).join('');
+      sel.value = current ?? '';
+      if (current && !channels.some(c => c.id === current)) {
+        sel.insertAdjacentHTML('beforeend', `<option value="${esc(current)}" selected>channel ${esc(current)}</option>`);
+        sel.value = current;
+      }
+    });
+    $('setupState').textContent = channels.length ? channels.length + ' channels' : 'bot offline';
+  }
+
+  async function saveConfig(){
+    const btn = $('saveCfg');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try{
+      const payload = { };
+      Object.keys(CFG_FIELDS).forEach(id => { payload[CFG_FIELDS[id]] = $(id).value || null; });
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + TOKEN },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Could not save.');
+      const out = await res.json();
+      toast(out.leaderboardSynced
+        ? 'Saved — the live board is being posted and pinned in that channel now.'
+        : 'Settings saved.');
+      await Promise.all([loadSetup(), loadStatus()]);
+    }catch(e){
+      toast(e.message || 'Could not save.');
+    }finally{
+      btn.disabled = false; btn.textContent = 'Save settings';
+    }
+  }
+
+  /* ---------------- deploy helpers ---------------- */
+  function renderEnv(){
+    $('envOut').textContent = [
+      'DISCORD_TOKEN=' + ($('depToken').value.trim()),
+      'GUILD_ID=' + ($('depGuild').value.trim()),
+      'DASHBOARD_PASSWORD=' + ($('depPw').value.trim()),
+      'DATABASE_URL=postgresql://user:pass@host:5432/insane_ownz'
+    ].join('\n');
+  }
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-copy]');
+    if (!btn) return;
+    const text = $(btn.dataset.copy).textContent;
+    navigator.clipboard.writeText(text).then(
+      () => toast('Copied.'),
+      () => toast('Copy failed — select the text instead.')
+    );
+  });
+
+  async function refreshAll(){
+    try{
+      await Promise.all([loadOverview(), loadStats(), loadCommands(), loadAutomod(), loadWarnings(), loadStatus(), loadHistory(), loadSetup()]);
+      $('lastSync').textContent = 'Synced ' + new Date().toLocaleTimeString();
+    }catch(e){
+      if (TOKEN) toast(e.message || 'Could not refresh data.');
+    }
+  }
+
+  function startTimer(){
+    clearInterval(refreshTimer);
+    if ($('autoRefresh').checked) refreshTimer = setInterval(refreshAll, 15000);
+  }
+
+  /* ---------------- nav & events ---------------- */
+  const VIEW_META = {
+    overview: ['Overview', 'Everything Insane Ownz has been up to'],
+    commands: ['Activity', 'Full command history with filters'],
+    automod:  ['AutoMod', 'Automatic actions: scam links, spam, blocked words'],
+    warnings: ['Warnings', 'Manual moderation history'],
+    history:  ['Command history', 'Every run of /help, /ticket, /leaderboard and /setup'],
+    setup:    ['Setup', 'Channels the bot uses — saved straight to the bot'],
+    status:   ['Live status', 'Uptime, ping and the latest of everything'],
+    deploy:   ['Deploy guide', 'From token to a live bot in your server']
+  };
+
+  document.querySelectorAll('.navbtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const v = btn.dataset.view;
+      document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.view').forEach(s => s.classList.toggle('active', s.id === 'view-' + v));
+      $('viewTitle').textContent = VIEW_META[v][0];
+      $('viewSub').textContent = VIEW_META[v][1];
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+
+  let debounce;
+  const onFilter = (fn) => () => { clearTimeout(debounce); debounce = setTimeout(fn, 250); };
+  $('fUser').addEventListener('input', onFilter(loadCommands));
+  $('fCmd').addEventListener('input', onFilter(loadCommands));
+  $('fLimit').addEventListener('change', loadCommands);
+  $('fStatus').addEventListener('change', renderCommands);
+  $('fAuto').addEventListener('input', renderAutomod);
+  $('fWarn').addEventListener('input', renderWarnings);
+  $('refreshBtn').addEventListener('click', refreshAll);
+  $('autoRefresh').addEventListener('change', startTimer);
+  $('logoutBtn').addEventListener('click', signOut);
+  $('fHistCmd').addEventListener('change', renderHistory);
+  $('saveCfg').addEventListener('click', saveConfig);
+  ['depToken','depGuild','depPw'].forEach(id => $(id).addEventListener('input', renderEnv));
+  setInterval(tickStatus, 1000);
+  $('loginBtn').addEventListener('click', login);
+  $('pw').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+  const saved = localStorage.getItem(STORE_KEY);
+  if (saved) { TOKEN = saved; enterApp(); }
+</script>
+</body>
+</html>
