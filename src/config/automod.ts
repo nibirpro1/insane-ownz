@@ -13,7 +13,7 @@ export const AUTOMOD = {
   // Messages with more mentions than this are deleted
   maxMentions: 5,
   // Blocked words/phrases (case-insensitive)
-  blockedWords: [] as string[],
+  blockedWords: ["discord-nitro-free", "free nitro generator", "account stealer", "token logger"] as string[],
 
   // --- Anti-scam -------------------------------------------------------
   // Blocks common "free Nitro" phishing patterns (fake gift links, look-alike

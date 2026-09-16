@@ -5,9 +5,9 @@ invite events, levelling, polls and music — all under one neon-violet Insane O
 
 ## Branding
 
-- Logo: `assets/vyntric-logo.png` — upload it as the bot avatar in the
+- Upload your Team Insane logo as the bot avatar in the
   [Discord Developer Portal](https://discord.com/developers/applications) → Bot → Avatar.
-- Every embed automatically uses that avatar as author + footer icon
+- Every embed automatically uses the bot avatar as author + footer icon
   (`src/lib/brand.ts`, applied on ready).
 - Colours: violet `#7C5CFF`, cyan `#22D3EE`, plus success/warning/danger tones.
 
@@ -71,6 +71,14 @@ and `check` shows status + top-10 leaderboard with medals.
 ### Levelling
 XP per message (60s cooldown), Insane Ownz level-up embed with coin reward, posted in the
 configured level-up channel. `/rank`, `/leaderboard`, `/balance`, `/daily`.
+
+### Live server stats (`✦ SERVER STATS`)
+Two locked voice channels pinned at the top of the server, updated by the bot:
+- `⭐ | Members : 1234` — live member count (refreshes on every join/leave)
+- `📅 | Thursday, Sep 17th` — current date in Asia/Dhaka time (changes every day)
+
+They are created automatically on bot startup (and by `/ready` full setup). Renames
+respect Discord's rate limit, so the counters never get stuck or throttled.
 
 ### Moderation & more
 `/ban`, `/kick`, `/mute`, `/warn`, `/warnings`, `/poll`, `/remind`, plus music

@@ -17,7 +17,7 @@ const command: Command = {
       "🎉 Engagement": ["giveaway", "inviteevent", "rank", "leaderboard", "balance", "daily", "levelrewards"],
       "🎵 Music": ["play", "skip", "queue", "stop"],
       "🎮 Fun": ["8ball", "coinflip", "rps", "poll"],
-      "⚙️ Utility": ["setup", "setuproles", "announce", "afk", "reactionrole", "userinfo", "serverinfo", "avatar", "ping", "remind", "help"],
+      "⚙️ Utility": ["setup", "ready", "setuproles", "announce", "afk", "reactionrole", "userinfo", "serverinfo", "avatar", "ping", "remind", "help"],
     };
 
     const lines = Object.entries(groups).map(([label, cmds]) => {

@@ -4,6 +4,8 @@ import { cacheGuildInvites } from "../lib/invites";
 import { startGiveawayScheduler } from "../lib/giveaways";
 import { setBrandIcon } from "../lib/brand";
 import { startLeaderboardScheduler } from "../lib/leaderboard";
+import { startServerInfoScheduler } from "../lib/serverInfo";
+import { startServerStatsScheduler } from "../lib/serverStats";
 
 export default {
   name: "ready",
@@ -22,5 +24,7 @@ export default {
 
     startGiveawayScheduler(client);
     startLeaderboardScheduler(client);
+    startServerInfoScheduler(client);
+    startServerStatsScheduler(client);
   },
 };

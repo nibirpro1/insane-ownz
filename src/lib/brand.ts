@@ -2,7 +2,7 @@ import { EmbedBuilder } from "discord.js";
 
 /**
  * Insane Ownz brand system.
- * Neon-violet / cyan identity, matching the Vyntric Hub logo.
+ * Insane Ownz brand system using the bot's current Discord avatar.
  */
 export const BRAND = {
   name: "Insane Ownz",
@@ -20,8 +20,8 @@ export const BRAND = {
 
 /**
  * Logo URL used in every embed (author icon + footer icon).
- * Set automatically on ready from the bot's own avatar, so uploading
- * assets/vyntric-logo.png as the bot avatar brands the whole bot.
+ * Set automatically on ready from the bot's own avatar, so updating the
+ * avatar in Discord updates the branding used by every embed.
  */
 let brandIconUrl: string | undefined;
 
