@@ -72,15 +72,19 @@ and `check` shows status + top-10 leaderboard with medals.
 XP per message (60s cooldown), Insane Ownz level-up embed with coin reward, posted in the
 configured level-up channel. `/rank`, `/leaderboard`, `/balance`, `/daily`.
 
-### Welcome card (`guildMemberAdd`)
-Canvas-drawn welcome card (member avatar, brand gradient, member number) posted in
-the welcome channel with quick-start buttons: 📜 Server Rules, 🎭 Get Your Roles,
-🎫 Open a Ticket, ✅ Verify. Also shows invite attribution and account age.
+### Welcome, goodbye & boost cards (`guildMemberAdd` / `guildMemberRemove` / `guildMemberUpdate`)
+Canvas-drawn cards (member avatar, brand gradient, member number) with one look per moment:
+- **Welcome** — `+1 NEW MEMBER`, posted in the welcome channel with quick-start buttons:
+  📜 Server Rules, 🎭 Get Your Roles, 🎫 Open a Ticket, ✅ Verify + invite attribution and account age
+- **Goodbye** — `-1 MEMBER` card with "we are now N members strong" when someone leaves
+- **Legend Boost** — `NEW BOOST` thank-you card posted in announcements when someone boosts,
+  with boost count and server level
 
 ### Live server stats (`✦ SERVER STATS`)
-Two locked voice channels pinned at the top of the server, updated by the bot:
+Three locked voice channels pinned at the top of the server, updated by the bot:
 - `⭐ | Members : 1234` — live member count (refreshes on every join/leave)
 - `📅 | Thursday, Sep 17th` — current date in Asia/Dhaka time (changes every day)
+- `👑 | Boosts : 7` — live boost count (refreshes instantly on new boosts)
 
 They are created automatically on bot startup (and by `/ready` full setup). Renames
 respect Discord's rate limit, so the counters never get stuck or throttled.

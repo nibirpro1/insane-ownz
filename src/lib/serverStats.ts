@@ -20,6 +20,7 @@ import {
 const STATS_CATEGORY_NAME = "✦ SERVER STATS";
 const MEMBERS_PREFIX = "⭐ | Members :";
 const DATE_PREFIX = "📅 |";
+const BOOSTS_PREFIX = "👑 | Boosts :";
 
 // Discord only allows ~2 channel name changes per 10 minutes per channel.
 // This cooldown keeps every rename inside that limit — quick join/leave bursts
@@ -41,6 +42,10 @@ export function formatMembersName(memberCount: number): string {
   return `${MEMBERS_PREFIX} ${memberCount}`;
 }
 
+export function formatBoostsName(boostCount: number): string {
+  return `${BOOSTS_PREFIX} ${boostCount}`;
+}
+
 /** Example: "📅 | Wednesday, Sep 16th" (Asia/Dhaka time). */
 export function formatDateName(now: Date = new Date()): string {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -60,7 +65,10 @@ function findStatsChannels(guild: Guild) {
   const date = guild.channels.cache.find(
     (channel) => channel.type === ChannelType.GuildVoice && channel.name.startsWith(DATE_PREFIX)
   ) as VoiceBasedChannel | undefined;
-  return { members, date };
+  const boost = guild.channels.cache.find(
+    (channel) => channel.type === ChannelType.GuildVoice && channel.name.startsWith(BOOSTS_PREFIX)
+  ) as VoiceBasedChannel | undefined;
+  return { members, date, boost };
 }
 
 /**
@@ -70,10 +78,16 @@ function findStatsChannels(guild: Guild) {
 export async function ensureStatsChannels(
   guild: Guild,
   categoryId?: string
-): Promise<{ members: VoiceBasedChannel | null; date: VoiceBasedChannel | null; createdAny: boolean }> {
+): Promise<{
+  members: VoiceBasedChannel | null;
+  date: VoiceBasedChannel | null;
+  boost: VoiceBasedChannel | null;
+  createdAny: boolean;
+}> {
   const existing = findStatsChannels(guild);
   let members = existing.members ?? null;
   let date = existing.date ?? null;
+  let boost = existing.boost ?? null;
   let createdAny = false;
 
   let parent: CategoryChannel | null = categoryId
@@ -116,8 +130,20 @@ export async function ensureStatsChannels(
       .catch(() => null);
     if (date) createdAny = true;
   }
+  if (!boost) {
+    boost = await guild.channels
+      .create({
+        name: formatBoostsName(guild.premiumSubscriptionCount ?? 0),
+        type: ChannelType.GuildVoice,
+        parent: parent?.id,
+        permissionOverwrites: lockedOverwrites,
+        reason: "Team Insane live stats",
+      })
+      .catch(() => null);
+    if (boost) createdAny = true;
+  }
 
-  return { members, date, createdAny };
+  return { members, date, boost, createdAny };
 }
 
 async function renameWithinLimit(channel: VoiceBasedChannel, desired: string, force = false): Promise<void> {
@@ -128,11 +154,12 @@ async function renameWithinLimit(channel: VoiceBasedChannel, desired: string, fo
   await channel.setName(desired, "Team Insane live stats").catch(() => {});
 }
 
-/** Updates both stats channel names for a guild (respecting the rename cooldown). */
+/** Updates all stats channel names for a guild (respecting the rename cooldown). */
 export async function refreshStats(guild: Guild, force = false): Promise<void> {
-  const { members, date } = findStatsChannels(guild);
+  const { members, date, boost } = findStatsChannels(guild);
   if (members) await renameWithinLimit(members, formatMembersName(guild.memberCount ?? 0), force);
   if (date) await renameWithinLimit(date, formatDateName(), force);
+  if (boost) await renameWithinLimit(boost, formatBoostsName(guild.premiumSubscriptionCount ?? 0), force);
 }
 
 /**
@@ -156,4 +183,11 @@ export function startServerStatsScheduler(client: Client): void {
   // refreshStats keeps us within Discord's rename rate limits.
   client.on(Events.GuildMemberAdd, (member) => void refreshStats(member.guild));
   client.on(Events.GuildMemberRemove, (member) => void refreshStats(member.guild));
+
+  // A new boost → refresh the boosts counter instantly.
+  client.on(Events.GuildUpdate, (oldGuild, newGuild) => {
+    if ((oldGuild.premiumSubscriptionCount ?? 0) !== (newGuild.premiumSubscriptionCount ?? 0)) {
+      void refreshStats(newGuild);
+    }
+  });
 }
